@@ -1,0 +1,47 @@
+architecture: arm64
+
+actions:
+  - action: recipe
+    recipe: rootfs.yaml
+
+  - action: image-partition
+    imagename: debian.img
+    imagesize: 2048MB
+    partitiontype: gpt
+    mountpoints:
+      - mountpoint: /
+        partition: rootfs
+        options:
+          - defaults
+          - noatime
+          - compress=zstd
+      - mountpoint: /boot/efi
+        partition: efi
+        options:
+          - x-systemd.automount
+    partitions:
+      - name: efi
+        fs: fat32
+        start: 0%
+        end: 512MB
+        flags:
+          - boot
+          - esp
+      - name: rootfs
+        fs: btrfs
+        start: 512MB
+        end: 100%
+        fsck: false
+
+  - action: filesystem-deploy
+    description: Deploying filesystem onto image
+    setup-fstab: true
+    setup-kernel-cmdline: true
+
+  - action: overlay
+    source: overlay
+    destination: /
+
+  - action: run
+    chroot: true
+    script: scripts/systemd-boot.sh

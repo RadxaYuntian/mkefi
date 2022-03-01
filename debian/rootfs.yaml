@@ -1,0 +1,44 @@
+{{- $mirror := or .mirror "https://deb.debian.org/debian" -}}
+{{- $mirror := or .mirror "https://mirrors.tuna.tsinghua.edu.cn/debian" -}}
+
+architecture: arm64
+
+actions:
+  - action: debootstrap
+    suite: bullseye
+    components:
+      - main
+      - contrib
+      - non-free
+    mirror: {{ $mirror }}
+    variant: minbase
+  
+  - action: apt
+    packages:
+      - apt-transport-https
+      - bash-completion 
+      - btrfs-progs
+      - haveged
+      - openssh-server
+      - sudo
+      - systemd
+      - tmux
+      - wpasupplicant
+      - iproute2
+      - zram-tools
+      - passwd
+      - nano
+      - firmware-linux
+      - initramfs-tools
+      - init
+      - linux-image-arm64
+
+  - action: run
+    chroot: true
+    command: systemctl enable ssh haveged zramswap
+  
+  - action: run
+    chroot: true
+    command: |
+      echo root:root | chpasswd && \
+      echo debian > /etc/hostname
