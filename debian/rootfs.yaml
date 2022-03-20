@@ -1,18 +1,30 @@
-{{- $mirror := or .mirror "https://deb.debian.org/debian" -}}
-{{- $mirror := or .mirror "https://mirrors.tuna.tsinghua.edu.cn/debian" -}}
+{{- $distro := or .distro "debian" -}}
 
 architecture: arm64
 
 actions:
+{{ if eq $distro "debian"}}
   - action: debootstrap
     suite: bullseye
     components:
       - main
       - contrib
       - non-free
-    mirror: {{ $mirror }}
+    mirror: https://deb.debian.org/debian
     variant: minbase
-  
+{{ else if eq $distro "ubuntu"}}
+  - action: debootstrap
+    suite: focal
+    components:
+      - main
+      - restricted
+      - universe
+      - multiverse
+    mirror: http://ports.ubuntu.com/ubuntu-ports
+    variant: minbase
+    check-gpg: false
+{{ end }}
+
   - action: apt
     packages:
       - apt-transport-https
@@ -28,10 +40,15 @@ actions:
       - zram-tools
       - passwd
       - nano
-      - firmware-linux
       - initramfs-tools
       - init
+{{ if eq $distro "debian"}}
       - linux-image-arm64
+      - firmware-linux
+{{ else if eq $distro "ubuntu"}}
+      - linux-image-generic
+      - linux-firmware
+{{ end }}
 
   - action: run
     chroot: true
@@ -41,4 +58,4 @@ actions:
     chroot: true
     command: |
       echo root:root | chpasswd && \
-      echo debian > /etc/hostname
+      echo {{ $distro }} > /etc/hostname

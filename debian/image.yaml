@@ -1,11 +1,15 @@
+{{- $distro := or .distro "debian" -}}
+
 architecture: arm64
 
 actions:
   - action: recipe
     recipe: rootfs.yaml
+    variables:
+      distro: {{ $distro }}
 
   - action: image-partition
-    imagename: debian.img
+    imagename: {{ $distro }}.img
     imagesize: 2048MB
     partitiontype: gpt
     mountpoints:
