@@ -1,0 +1,41 @@
+name: 'mkefi'
+description: 'Tools to generate EFI capable aarch64 system images '
+inputs:
+  board:
+    required: false
+  flavor:
+    required: true
+  release-id:
+    required: false
+  github-token:
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        repository: RadxaYuntian/mkefi
+    - name: Build
+      shell: bash
+      run: |
+        make ${{ inputs.flavor }}
+        sudo chown $USER ${{ inputs.flavor }}.img
+        xz -T 0 ${{ inputs.flavor }}.img
+        sha256sum ${{ inputs.flavor }}.img.xz > ${{ inputs.flavor }}.img.xz.sha256
+    - name: Upload
+      if: inputs.release-id != '' && inputs.github-token != ''
+      uses: xresloader/upload-to-github-release@v1
+      env:
+          GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        release_id: ${{ inputs.release-id }}
+        file: ./${{ inputs.flavor }}.img.*
+        draft: false
+    - name: Rollback release
+      if: failure() && inputs.release-id != '' && inputs.github-token != ''
+      uses: author/action-rollback@stable
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        release_id: ${{ inputs.release-id }}
